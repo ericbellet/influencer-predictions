@@ -15,7 +15,9 @@ const EMPTY_STATE: StoreState = {
 };
 
 function databaseUrl(): string | null {
-  return process.env.DATABASE_URL?.trim() || null;
+  const raw = process.env["DATABASE_URL"]?.trim();
+  if (!raw) return null;
+  return raw.replace(/^['"]/, "").replace(/['"]$/, "");
 }
 
 function sqlClient() {
@@ -85,10 +87,13 @@ function writeLocal(state: StoreState): void {
 }
 
 export async function loadState(): Promise<StoreState> {
-  if (databaseUrl()) {
+  if (!databaseUrl()) return readLocal() ?? EMPTY_STATE;
+  try {
     return (await readDatabase()) ?? EMPTY_STATE;
+  } catch (error) {
+    console.error("supabase state read failed", error);
+    return readLocal() ?? EMPTY_STATE;
   }
-  return readLocal() ?? EMPTY_STATE;
 }
 
 export async function saveState(state: StoreState): Promise<void> {
