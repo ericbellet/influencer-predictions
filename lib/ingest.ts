@@ -83,6 +83,8 @@ export async function runIngest(options: IngestOptions = {}): Promise<{
     : CHANNELS;
 
   const state = await loadState();
+  const channelErrors = { ...state.channelErrors };
+  state.channelErrors = channelErrors;
   const summary: IngestSummary = {
     since: since.toISOString(),
     channels: channels.length,
@@ -98,13 +100,21 @@ export async function runIngest(options: IngestOptions = {}): Promise<{
   const queue: Array<{ channel: InfluencerChannel; video: YoutubeVideo }> = [];
 
   for (const channel of channels) {
-    const videos = await listChannelVideos(channel.channelId);
-    summary.listed += videos.length;
-    for (const video of videos) {
-      if (publishedAt(video) < since) continue;
-      summary.considered += 1;
-      if (state.processed[video.id]) continue;
-      queue.push({ channel, video });
+    try {
+      const videos = await listChannelVideos(channel.channelId);
+      delete channelErrors[channel.channelId];
+      summary.listed += videos.length;
+      for (const video of videos) {
+        if (publishedAt(video) < since) continue;
+        summary.considered += 1;
+        if (state.processed[video.id]) continue;
+        queue.push({ channel, video });
+      }
+    } catch (error) {
+      channelErrors[channel.channelId] = {
+        message: error instanceof Error ? error.message : String(error),
+        at: new Date().toISOString(),
+      };
     }
   }
 
@@ -112,7 +122,16 @@ export async function runIngest(options: IngestOptions = {}): Promise<{
   const batch = queue.slice(0, Math.max(1, limit));
 
   for (const { channel, video } of batch) {
-    const processed = await processVideo(channel, video);
+    let processed: ProcessedVideo;
+    try {
+      processed = await processVideo(channel, video);
+    } catch (error) {
+      channelErrors[channel.channelId] = {
+        message: error instanceof Error ? error.message : String(error),
+        at: new Date().toISOString(),
+      };
+      continue;
+    }
     state.processed[video.id] = processed;
     summary.processed += 1;
     if (processed.relevant) summary.relevant += 1;

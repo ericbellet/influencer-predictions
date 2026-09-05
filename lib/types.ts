@@ -39,11 +39,18 @@ export interface InfluencerPayload {
   generated_at: string;
   predictions: PredictionItem[];
   videos: SourceVideo[];
+  error?: string | null;
 }
 
 export interface InfluencerFeed {
   generated_at: string;
+  error?: string | null;
   influencers: InfluencerPayload[];
+}
+
+export interface ChannelQueryError {
+  message: string;
+  at: string;
 }
 
 export interface ProcessedVideo {
@@ -61,5 +68,6 @@ export interface ProcessedVideo {
 export interface StoreState {
   officialSince: string;
   processed: Record<string, ProcessedVideo>;
+  channelErrors?: Record<string, ChannelQueryError>;
   updatedAt: string;
 }

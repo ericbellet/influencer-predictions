@@ -11,6 +11,7 @@ const LOCAL_PATH = join(process.cwd(), "data", "state.json");
 const EMPTY_STATE: StoreState = {
   officialSince: "2026-09-06",
   processed: {},
+  channelErrors: {},
   updatedAt: new Date(0).toISOString(),
 };
 

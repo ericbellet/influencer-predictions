@@ -64,6 +64,8 @@ export async function buildFeed(weekId = isoWeekId()): Promise<InfluencerFeed> {
       transcriptChars: video.transcriptChars,
     }));
 
+    const channelError = state.channelErrors?.[channel.channelId]?.message ?? null;
+
     return {
       name: channel.name,
       handle: channel.handle,
@@ -72,8 +74,12 @@ export async function buildFeed(weekId = isoWeekId()): Promise<InfluencerFeed> {
       generated_at: videos[0]?.processedAt ?? generatedAt,
       predictions: picks,
       videos: sourceVideos,
+      error: channelError,
     };
   });
 
-  return { generated_at: generatedAt, influencers };
+  const feedError = influencers.some((item) => item.error)
+    ? "One or more YouTube channel queries failed"
+    : null;
+  return { generated_at: generatedAt, error: feedError, influencers };
 }
