@@ -60,8 +60,6 @@ Restrict to one channel:
 curl "http://localhost:3001/api/cron/ingest?test=1&limit=1&channel=artedeinvertir"
 ```
 
-## Production notes
+## Storage
 
-- Add a Vercel Blob store so processed videos survive cold starts (`BLOB_READ_WRITE_TOKEN`).
-- Optional: AI Gateway / OIDC so extraction uses an LLM instead of the ticker heuristic.
-- `CRON_SECRET` locks the ingest route once the service is public.
+Processed videos live in the **same Supabase Postgres** as the professor platform, table `influencer_ingest_state`. Set `DATABASE_URL` to that pooled URI. Without it (local), the service writes `data/state.json`.
