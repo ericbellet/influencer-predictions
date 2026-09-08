@@ -53,7 +53,14 @@ export async function buildFeed(weekId = isoWeekId()): Promise<InfluencerFeed> {
       .filter((video) => video.channelId === channel.channelId && inIsoWeek(video.publishedAt, weekId))
       .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
 
-    const picks = mergePicks(videos.flatMap((video) => video.predictions));
+    const picks = mergePicks(
+      videos.flatMap((video) =>
+        video.predictions.map((prediction) => ({
+          ...prediction,
+          source_url: `https://www.youtube.com/watch?v=${video.videoId}`,
+        })),
+      ),
+    );
     const sourceVideos: SourceVideo[] = videos.map((video) => ({
       id: video.videoId,
       title: video.title,

@@ -16,6 +16,8 @@ export interface PredictionItem {
   ticker: string;
   horizon: Horizon;
   rank: 1 | 2 | 3;
+  /** Exact video from which this recommendation was extracted. */
+  source_url?: string;
   target_price?: number | null;
   investment_thesis?: string | null;
   risks?: string | null;

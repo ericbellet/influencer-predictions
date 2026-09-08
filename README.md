@@ -17,7 +17,7 @@ GET /api/influencers
       "channel_url": "https://www.youtube.com/@lapizarradeandres",
       "generated_at": "2026-09-06T10:00:00Z",
       "predictions": [
-        { "ticker": "AAPL", "horizon": "3M", "rank": 1, "investment_thesis": "…" }
+        { "ticker": "AAPL", "horizon": "3M", "rank": 1, "investment_thesis": "…", "source_url": "https://www.youtube.com/watch?v=VIDEO_ID" }
       ],
       "videos": []
     }
@@ -25,7 +25,7 @@ GET /api/influencers
 }
 ```
 
-Each person uses the same pick shape as a student (`ticker`, `horizon`, `rank`). Empty `predictions` is valid: if a video does not recommend a stock, we do not invent one.
+Each person uses the same pick shape as a student (`ticker`, `horizon`, `rank`) and adds the exact YouTube `source_url` for traceability. Empty `predictions` is valid: if a video does not recommend a stock, we do not invent one.
 
 ## What the cron does
 
