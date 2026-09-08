@@ -31,7 +31,7 @@ Each person uses the same pick shape as a student (`ticker`, `horizon`, `rank`).
 
 Daily at 06:00 UTC (`vercel.json`):
 
-1. Read the public YouTube RSS of every channel in `lib/channels.ts`
+1. Read the public YouTube RSS of every channel in `lib/channels.ts`, retrying transient 404, 429 and 5xx responses
 2. Keep videos published on or after `2026-09-06` (tomorrow at the time this was built)
 3. Drop videos whose title/description do not look like stock recommendations
 4. Fetch the transcript only for the rest

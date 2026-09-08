@@ -10,6 +10,7 @@ export interface YoutubeVideo {
 
 const USER_AGENT =
   "Mozilla/5.0 (compatible; influencer-predictions/1.0; +https://lasalle.investing)";
+const RSS_ATTEMPTS = 3;
 
 function decodeXml(value: string): string {
   return value
@@ -23,15 +24,44 @@ function decodeXml(value: string): string {
 
 /**
  * Public RSS — no YouTube Data API key required.
+ *
+ * YouTube occasionally returns a transient 404 for valid channel feeds. A
+ * single response must not poison the persisted channel state until the next
+ * day's cron, so retry the small set of statuses known to be temporary here.
  */
-export async function listChannelVideos(channelId: string): Promise<YoutubeVideo[]> {
+export async function listChannelVideos(
+  channelId: string,
+  options: { retryDelayMs?: number } = {},
+): Promise<YoutubeVideo[]> {
   const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
-  const response = await fetch(url, {
-    headers: { Accept: "application/atom+xml,application/xml", "User-Agent": USER_AGENT },
-    cache: "no-store",
-  });
-  if (!response.ok) {
-    throw new Error(`YouTube RSS ${response.status} for ${channelId}`);
+  const retryDelayMs = options.retryDelayMs ?? 250;
+  let response: Response | null = null;
+  let networkError: unknown = null;
+
+  for (let attempt = 1; attempt <= RSS_ATTEMPTS; attempt += 1) {
+    try {
+      response = await fetch(url, {
+        headers: { Accept: "application/atom+xml,application/xml", "User-Agent": USER_AGENT },
+        cache: "no-store",
+      });
+      networkError = null;
+      if (response.ok) break;
+      if (response.status !== 404 && response.status !== 429 && response.status < 500) break;
+    } catch (error) {
+      networkError = error;
+    }
+
+    if (attempt < RSS_ATTEMPTS && retryDelayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs * 2 ** (attempt - 1)));
+    }
+  }
+
+  if (!response?.ok) {
+    if (networkError) {
+      const reason = networkError instanceof Error ? networkError.message : String(networkError);
+      throw new Error(`YouTube RSS network error for ${channelId}: ${reason}`);
+    }
+    throw new Error(`YouTube RSS ${response?.status ?? "unavailable"} for ${channelId} after ${RSS_ATTEMPTS} attempts`);
   }
 
   const xml = await response.text();
